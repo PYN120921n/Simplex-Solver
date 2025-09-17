@@ -3,40 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método Simplex - Solucionador</title>
+    <title>Simplex Solver - Solucionador de Programación Lineal</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
     <style>
+        :root {
+            --primary: #4a00e0;
+            --secondary: #8e2de2;
+            --accent: #00ff41;
+            --text-light: #333;
+            --text-dark: #f1f1f1;
+            --bg-light: #f9f9f9;
+            --bg-dark: #121212;
+            --card-light: white;
+            --card-dark: #1e1e1e;
+            --border-light: #ddd;
+            --border-dark: #333;
+            --success: #00c853;
+            --error: #ff5252;
+            --warning: #ffab00;
+        }
+
+        .light-mode {
+            --bg-primary: var(--bg-light);
+            --text-primary: var(--text-light);
+            --card-bg: var(--card-light);
+            --border-color: var(--border-light);
+            --header-bg: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --button-bg: linear-gradient(to right, var(--primary), var(--secondary));
+            --table-header: #f3f0ff;
+            --table-row: #f9f9f9;
+            --solution-bg: #e6f7ff;
+            --example-bg: #fff4e6;
+        }
+
+        .dark-mode {
+            --bg-primary: var(--bg-dark);
+            --text-primary: var(--text-dark);
+            --card-bg: var(--card-dark);
+            --border-color: var(--border-dark);
+            --header-bg: linear-gradient(135deg, #000000 0%, #003300 100%);
+            --button-bg: linear-gradient(to right, #00ff41, #00b32d);
+            --table-header: #1a331a;
+            --table-row: #262626;
+            --solution-bg: #002200;
+            --example-bg: #332100;
+            --accent-glow: 0 0 5px var(--accent), 0 0 10px var(--accent);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
         
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: #333;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .container {
             width: 100%;
             max-width: 1400px;
-            background: white;
+            background: var(--card-bg);
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             overflow-x: auto;
             margin: 20px 0;
+            border: 1px solid var(--border-color);
         }
         
         header {
-            background: #4a00e0;
+            background: var(--header-bg);
             color: white;
             padding: 20px;
             text-align: center;
+            position: relative;
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
         }
         
         h1 {
@@ -63,18 +127,24 @@
         }
         
         .input-section, .output-section {
-            background: #f9f9f9;
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            min-width: 0; /* Permite que se ajuste al contenedor */
+            min-width: 0;
+            border: 1px solid var(--border-color);
         }
         
         h2 {
-            color: #4a00e0;
+            color: var(--primary);
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .dark-mode h2 {
+            color: var(--accent);
+            text-shadow: var(--accent-glow);
         }
         
         .form-group {
@@ -85,32 +155,39 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #555;
+            color: var(--text-primary);
         }
         
         textarea {
             width: 100%;
             height: 150px;
             padding: 15px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 16px;
             resize: vertical;
             transition: border-color 0.3s;
+            background: var(--card-bg);
+            color: var(--text-primary);
         }
         
         textarea:focus {
             outline: none;
-            border-color: #4a00e0;
+            border-color: var(--primary);
+        }
+        
+        .dark-mode textarea:focus {
+            border-color: var(--accent);
+            box-shadow: var(--accent-glow);
         }
         
         .example {
-            background: #fff4e6;
+            background: var(--example-bg);
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
             font-size: 14px;
-            border-left: 4px solid #ff922b;
+            border-left: 4px solid var(--warning);
         }
         
         .problem-type {
@@ -127,7 +204,7 @@
         }
         
         button {
-            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            background: var(--button-bg);
             color: white;
             border: none;
             padding: 14px 28px;
@@ -146,6 +223,10 @@
             box-shadow: 0 6px 15px rgba(106, 17, 203, 0.4);
         }
         
+        .dark-mode button:hover {
+            box-shadow: 0 6px 15px rgba(0, 255, 65, 0.4);
+        }
+        
         button:active {
             transform: translateY(0);
         }
@@ -155,18 +236,24 @@
         }
         
         .result-box {
-            background: white;
+            background: var(--card-bg);
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             overflow-x: auto;
+            border: 1px solid var(--border-color);
         }
         
         .result-title {
             font-weight: 600;
-            color: #4a00e0;
+            color: var(--primary);
             margin-bottom: 10px;
+        }
+        
+        .dark-mode .result-title {
+            color: var(--accent);
+            text-shadow: var(--accent-glow);
         }
         
         table {
@@ -174,55 +261,59 @@
             border-collapse: collapse;
             margin: 15px 0;
             font-size: 14px;
-            min-width: 600px; /* Ancho mínimo para tablas */
+            min-width: 600px;
         }
         
         th, td {
             padding: 8px 10px;
             text-align: center;
-            border: 1px solid #ddd;
-            white-space: nowrap;
+            border: 1px solid var(--border-color);
         }
         
         th {
-            background-color: #f3f0ff;
+            background-color: var(--table-header);
             font-weight: 600;
         }
         
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: var(--table-row);
         }
         
         .iteration {
             margin-bottom: 20px;
-            border: 1px solid #eee;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 12px;
-            background: white;
+            background: var(--card-bg);
             overflow-x: auto;
         }
         
         .iteration-title {
             font-weight: 600;
-            color: #4a00e0;
+            color: var(--primary);
             margin-bottom: 12px;
             text-align: center;
             padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--border-color);
             font-size: 16px;
         }
         
+        .dark-mode .iteration-title {
+            color: var(--accent);
+            text-shadow: var(--accent-glow);
+        }
+        
         .solution {
-            background: #e6f7ff;
+            background: var(--solution-bg);
             padding: 20px;
             border-radius: 8px;
             margin-top: 20px;
-            border-left: 4px solid #1890ff;
+            border-left: 4px solid var(--success);
         }
         
         .solution-title {
             font-weight: 600;
-            color: #1890ff;
+            color: var(--success);
             margin-bottom: 15px;
             font-size: 1.2rem;
         }
@@ -230,7 +321,7 @@
         .variable {
             margin: 8px 0;
             padding: 10px;
-            background: white;
+            background: var(--card-bg);
             border-radius: 6px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
@@ -243,12 +334,16 @@
         
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #4a00e0;
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 15px;
+        }
+        
+        .dark-mode .spinner {
+            border-top: 4px solid var(--accent);
         }
         
         @keyframes spin {
@@ -258,11 +353,11 @@
         
         .error {
             background: #ffe6e6;
-            color: #d93026;
+            color: var(--error);
             padding: 15px;
             border-radius: 8px;
             margin: 15px 0;
-            border-left: 4px solid #d93026;
+            border-left: 4px solid var(--error);
         }
         
         .controls {
@@ -274,11 +369,17 @@
         
         .control-btn {
             padding: 8px 15px;
-            background: #4a00e0;
+            background: var(--primary);
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+        }
+        
+        .dark-mode .control-btn {
+            background: var(--accent);
+            color: black;
+            font-weight: bold;
         }
         
         .control-btn:disabled {
@@ -289,13 +390,13 @@
         footer {
             text-align: center;
             padding: 20px;
-            color: white;
+            color: var(--text-primary);
             font-size: 0.9rem;
             opacity: 0.8;
         }
         
         .performance-info {
-            background: #f0f9ff;
+            background: var(--solution-bg);
             padding: 10px 15px;
             border-radius: 5px;
             margin: 10px 0;
@@ -329,16 +430,26 @@
             z-index: 9999;
             display: none;
         }
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .dark-mode .logo {
+            text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+        }
     </style>
 </head>
-<body class="no-select no-inspect" oncontextmenu="return false;">
+<body class="no-select no-inspect dark-mode" oncontextmenu="return false;">
     <div class="overlay" id="overlay"></div>
     
     <div class="container">
         <header>
-            <h1>Método Simplex - Juan Pablo Cime Chim ISC 3A </h1>
-            <h1>TecNM Campus Motul</h1>
-            <p class="subtitle">Solucionador rápido de problemas de programación lineal</p>
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+            <div class="logo">🧮</div>
+            <h1>Método Simplex - Solucionador Avanzado</h1>
+            <p class="subtitle">Resuelve problemas de programación lineal con el algoritmo simplex</p>
         </header>
         
         <div class="content">
@@ -385,7 +496,7 @@
     
     <footer>
         <p>© 2023 Solucionador de Método Simplex Optimizado - Para fines educativos</p>
-        <p>Juan Pablo Cime Chim ISC 3A</p>
+        <p>Desarrollado por Juan Pablo Cime Chim - ISC 3A - TecNM Campus Motul</p>
     </footer>
 
     <script>
@@ -423,6 +534,22 @@
                 document.getElementById('overlay').style.display = 'none';
             }
         }, 1000);
+
+        // Toggle de tema claro/oscuro
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        themeToggle.addEventListener('click', function() {
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                themeToggle.textContent = '☀️';
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                themeToggle.textContent = '🌙';
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             const problemInput = document.getElementById('problemInput');
