@@ -24,11 +24,11 @@
         
         .container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+            overflow-x: auto;
             margin: 20px 0;
         }
         
@@ -67,6 +67,7 @@
             border-radius: 10px;
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            min-width: 0; /* Permite que se ajuste al contenedor */
         }
         
         h2 {
@@ -110,6 +111,19 @@
             margin-top: 15px;
             font-size: 14px;
             border-left: 4px solid #ff922b;
+        }
+        
+        .problem-type {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .problem-type label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
         }
         
         button {
@@ -160,12 +174,14 @@
             border-collapse: collapse;
             margin: 15px 0;
             font-size: 14px;
+            min-width: 600px; /* Ancho mínimo para tablas */
         }
         
         th, td {
             padding: 8px 10px;
             text-align: center;
             border: 1px solid #ddd;
+            white-space: nowrap;
         }
         
         th {
@@ -183,6 +199,7 @@
             border-radius: 8px;
             padding: 12px;
             background: white;
+            overflow-x: auto;
         }
         
         .iteration-title {
@@ -252,6 +269,7 @@
             display: flex;
             gap: 10px;
             margin: 15px 0;
+            align-items: center;
         }
         
         .control-btn {
@@ -283,19 +301,57 @@
             margin: 10px 0;
             font-size: 14px;
         }
+        
+        /* Estilos para bloquear inspección */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .no-inspect {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 9999;
+            display: none;
+        }
     </style>
 </head>
-<body>
+<body class="no-select no-inspect" oncontextmenu="return false;">
+    <div class="overlay" id="overlay"></div>
+    
     <div class="container">
         <header>
             <h1>Método Simplex - Juan Pablo Cime Chim ISC 3A </h1>
-	    <h1>TecNM Campus Motul</h1>
+            <h1>TecNM Campus Motul</h1>
             <p class="subtitle">Solucionador rápido de problemas de programación lineal</p>
         </header>
         
         <div class="content">
             <div class="input-section">
                 <h2>Ingresar Problema</h2>
+                <div class="problem-type">
+                    <label>
+                        <input type="radio" name="problemType" value="max" checked> Maximización
+                    </label>
+                    <label>
+                        <input type="radio" name="problemType" value="min"> Minimización
+                    </label>
+                </div>
                 <div class="form-group">
                     <label for="problemInput">Formato: función_objetivo; restricción1; restricción2; ...</label>
                     <textarea id="problemInput" placeholder="Ejemplo: 5x1 + 4x2; 6x1 + 4x2 <= 24; x1 + x2 <= 5; x1 >= 0; x2 >= 0"></textarea>
@@ -329,10 +385,45 @@
     
     <footer>
         <p>© 2023 Solucionador de Método Simplex Optimizado - Para fines educativos</p>
-	<P>Juan Pablo Cime Chim ISC 3A</p>
+        <p>Juan Pablo Cime Chim ISC 3A</p>
     </footer>
 
     <script>
+        // Bloquear inspección de página
+        document.addEventListener('keydown', function(e) {
+            // Bloquear F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Bloquear Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+U
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C')) {
+                e.preventDefault();
+                return false;
+            }
+            
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Mostrar overlay al intentar abrir herramientas de desarrollo
+        let devtoolsOpen = false;
+        setInterval(function() {
+            const widthThreshold = window.outerWidth - window.innerWidth > 160;
+            const heightThreshold = window.outerHeight - window.innerHeight > 160;
+            
+            if (!devtoolsOpen && (widthThreshold || heightThreshold)) {
+                devtoolsOpen = true;
+                document.getElementById('overlay').style.display = 'block';
+            } else if (devtoolsOpen && !widthThreshold && !heightThreshold) {
+                devtoolsOpen = false;
+                document.getElementById('overlay').style.display = 'none';
+            }
+        }, 1000);
+
         document.addEventListener('DOMContentLoaded', function() {
             const problemInput = document.getElementById('problemInput');
             const solveBtn = document.getElementById('solveBtn');
@@ -343,10 +434,19 @@
             const prevIterationBtn = document.getElementById('prevIteration');
             const nextIterationBtn = document.getElementById('nextIteration');
             const iterationCounter = document.getElementById('iterationCounter');
+            const problemTypeRadios = document.querySelectorAll('input[name="problemType"]');
             
             let currentIteration = 0;
             let totalIterations = 0;
             let iterationData = [];
+            let problemType = 'max'; // Por defecto maximización
+            
+            // Actualizar tipo de problema
+            problemTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    problemType = this.value;
+                });
+            });
             
             // Ejemplo por defecto
             problemInput.value = "5x1 + 4x2; 6x1 + 4x2 <= 24; 6x1 + 3x2 <= 22.5; x1 + x2 <= 5; x1 + 2x2 <= 6; -x1 + x2 <= 1; x2 <= 2; x1 >= 0; x2 >= 0";
@@ -420,9 +520,12 @@
             }
             
             function mostrarResultados(result) {
+                const isMinimization = problemType === 'min';
+                const zValue = isMinimization ? -result.solucion.z : result.solucion.z;
+                
                 let html = `
                     <div class="result-box">
-                        <div class="result-title">FUNCIÓN OBJETIVO (max Z):</div>
+                        <div class="result-title">FUNCIÓN OBJETIVO (${isMinimization ? 'min Z' : 'max Z'}):</div>
                         <div>Coeficientes: [${result.coefObjetivo.join(', ')}]</div>
                     </div>
                     
@@ -460,7 +563,7 @@
                         <div class="solution">
                             <div class="solution-title">SOLUCIÓN ÓPTIMA - RESULTADO FINAL</div>
                             <div class="performance-info">Tiempo de procesamiento: ${result.tiempo}ms | Iteraciones: ${result.iteraciones.length}</div>
-                            <div>Valor óptimo de Z = ${result.solucion.z.toFixed(4)}</div>
+                            <div>Valor óptimo de Z = ${zValue.toFixed(4)}</div>
                             <div style="margin-top: 15px; font-weight: 600;">Variables básicas:</div>
                     `;
                     
@@ -515,7 +618,7 @@
                     
                     // Función objetivo (invertir signos para maximización)
                     const funcionObjetivo = partes[0];
-                    const [coefObjetivo, variablesOrden] = extraerCoeficientesConOrden(funcionObjetivo, null, true);
+                    const [coefObjetivo, variablesOrden] = extraerCoeficientesConOrden(funcionObjetivo, null, problemType === 'max');
                     
                     // Procesar restricciones
                     const restricciones = [];
