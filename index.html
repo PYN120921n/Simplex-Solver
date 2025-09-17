@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método Simplex - Solucionador</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: #4a00e0;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section, .output-section {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        h2 {
+            color: #4a00e0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #4a00e0;
+        }
+        
+        .example {
+            background: #fff4e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            border-left: 4px solid #ff922b;
+        }
+        
+        button {
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(106, 17, 203, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .output {
+            margin-top: 20px;
+        }
+        
+        .result-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #4a00e0;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        th, td {
+            padding: 8px 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f3f0ff;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .iteration {
+            margin-bottom: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px;
+            background: white;
+        }
+        
+        .iteration-title {
+            font-weight: 600;
+            color: #4a00e0;
+            margin-bottom: 12px;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+        
+        .solution {
+            background: #e6f7ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #1890ff;
+        }
+        
+        .solution-title {
+            font-weight: 600;
+            color: #1890ff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .variable {
+            margin: 8px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a00e0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #ffe6e6;
+            color: #d93026;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #d93026;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .control-btn {
+            padding: 8px 15px;
+            background: #4a00e0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .control-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .performance-info {
+            background: #f0f9ff;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Método Simplex - Juan Pablo Cime Chim ISC 3A </h1>
+	    <h1>TecNM Campus Motul</h1>
+            <p class="subtitle">Solucionador rápido de problemas de programación lineal</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2>Ingresar Problema</h2>
+                <div class="form-group">
+                    <label for="problemInput">Formato: función_objetivo; restricción1; restricción2; ...</label>
+                    <textarea id="problemInput" placeholder="Ejemplo: 5x1 + 4x2; 6x1 + 4x2 <= 24; x1 + x2 <= 5; x1 >= 0; x2 >= 0"></textarea>
+                    <div class="example">
+                        <strong>Ejemplos válidos:</strong><br>
+                        • 3x1 + 2x2; 2x1 + x2 <= 18; x1 - x2 >= 2<br>
+                        • 5x1 + 4x2; 6x1 + 4x2 <= 24; 6x1 + 3x2 <= 22.5; x1 + x2 <= 5<br>
+                        • 4x1 + 3x2; x1 + x2 <= 10; 2x1 + x2 <= 16; x1 >= 0; x2 >= 0
+                    </div>
+                </div>
+                <button id="solveBtn">Resolver con Método Simplex</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Procesando, por favor espere...</p>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2>Resultados y Solución</h2>
+                <div id="errorContainer"></div>
+                <div class="controls" id="controls" style="display: none;">
+                    <button class="control-btn" id="prevIteration" disabled>Anterior</button>
+                    <button class="control-btn" id="nextIteration" disabled>Siguiente</button>
+                    <span id="iterationCounter">Iteración 0/0</span>
+                </div>
+                <div id="output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>© 2023 Solucionador de Método Simplex Optimizado - Para fines educativos</p>
+	<P>Juan Pablo Cime Chim ISC 3A</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const problemInput = document.getElementById('problemInput');
+            const solveBtn = document.getElementById('solveBtn');
+            const output = document.getElementById('output');
+            const errorContainer = document.getElementById('errorContainer');
+            const loading = document.getElementById('loading');
+            const controls = document.getElementById('controls');
+            const prevIterationBtn = document.getElementById('prevIteration');
+            const nextIterationBtn = document.getElementById('nextIteration');
+            const iterationCounter = document.getElementById('iterationCounter');
+            
+            let currentIteration = 0;
+            let totalIterations = 0;
+            let iterationData = [];
+            
+            // Ejemplo por defecto
+            problemInput.value = "5x1 + 4x2; 6x1 + 4x2 <= 24; 6x1 + 3x2 <= 22.5; x1 + x2 <= 5; x1 + 2x2 <= 6; -x1 + x2 <= 1; x2 <= 2; x1 >= 0; x2 >= 0";
+            
+            solveBtn.addEventListener('click', function() {
+                const problemText = problemInput.value.trim();
+                if (!problemText) {
+                    showError("Por favor, ingrese un problema para resolver.");
+                    return;
+                }
+                
+                // Mostrar loading
+                loading.style.display = 'block';
+                output.innerHTML = '';
+                errorContainer.innerHTML = '';
+                controls.style.display = 'none';
+                
+                // Usar setTimeout para permitir que la UI se actualice
+                setTimeout(() => {
+                    try {
+                        const result = procesarProblema(problemText);
+                        if (result.error) {
+                            showError(result.error);
+                        } else {
+                            iterationData = [result.matrizInicial, ...result.iteraciones];
+                            totalIterations = iterationData.length;
+                            currentIteration = totalIterations > 0 ? totalIterations - 1 : 0;
+                            
+                            mostrarResultados(result);
+                            updateIterationControls();
+                        }
+                    } catch (e) {
+                        showError("Error al procesar el problema: " + e.message);
+                    } finally {
+                        loading.style.display = 'none';
+                    }
+                }, 50);
+            });
+            
+            prevIterationBtn.addEventListener('click', function() {
+                if (currentIteration > 0) {
+                    currentIteration--;
+                    showCurrentIteration();
+                    updateIterationControls();
+                }
+            });
+            
+            nextIterationBtn.addEventListener('click', function() {
+                if (currentIteration < totalIterations - 1) {
+                    currentIteration++;
+                    showCurrentIteration();
+                    updateIterationControls();
+                }
+            });
+            
+            function updateIterationControls() {
+                iterationCounter.textContent = `Iteración ${currentIteration + 1}/${totalIterations}`;
+                prevIterationBtn.disabled = currentIteration === 0;
+                nextIterationBtn.disabled = currentIteration === totalIterations - 1;
+            }
+            
+            function showCurrentIteration() {
+                const iterationDiv = document.getElementById('iterationContent');
+                if (iterationDiv) {
+                    iterationDiv.innerHTML = generarTablaHTML(iterationData[currentIteration]);
+                }
+            }
+            
+            function showError(message) {
+                errorContainer.innerHTML = `<div class="error">${message}</div>`;
+            }
+            
+            function mostrarResultados(result) {
+                let html = `
+                    <div class="result-box">
+                        <div class="result-title">FUNCIÓN OBJETIVO (max Z):</div>
+                        <div>Coeficientes: [${result.coefObjetivo.join(', ')}]</div>
+                    </div>
+                    
+                    <div class="result-box">
+                        <div class="result-title">RESTRICCIONES:</div>
+                `;
+                
+                for (let i = 0; i < result.restricciones.length; i++) {
+                    const tipoStr = result.tiposRestriccion[i] === 1 ? '<=' : 
+                                  result.tiposRestriccion[i] === -1 ? '>=' : '=';
+                    html += `<div>Restricción ${i + 1}: [${result.restricciones[i].join(', ')}] ${tipoStr} ${result.resultados[i]}</div>`;
+                }
+                
+                html += `</div>`;
+                
+                html += `
+                    <div class="result-box">
+                        <div class="result-title">TABLA SIMPLEX INICIAL</div>
+                        ${generarTablaHTML(result.matrizInicial)}
+                    </div>
+                `;
+                
+                if (result.iteraciones && result.iteraciones.length > 0) {
+                    controls.style.display = 'flex';
+                    html += `
+                        <div class="result-box">
+                            <div class="result-title">ITERACIÓN ACTUAL</div>
+                            <div id="iterationContent">${generarTablaHTML(iterationData[currentIteration])}</div>
+                        </div>
+                    `;
+                }
+                
+                if (result.solucion) {
+                    html += `
+                        <div class="solution">
+                            <div class="solution-title">SOLUCIÓN ÓPTIMA - RESULTADO FINAL</div>
+                            <div class="performance-info">Tiempo de procesamiento: ${result.tiempo}ms | Iteraciones: ${result.iteraciones.length}</div>
+                            <div>Valor óptimo de Z = ${result.solucion.z.toFixed(4)}</div>
+                            <div style="margin-top: 15px; font-weight: 600;">Variables básicas:</div>
+                    `;
+                    
+                    for (const [variable, valor] of Object.entries(result.solucion.variables)) {
+                        html += `<div class="variable">${variable} = ${valor.toFixed(4)}</div>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                output.innerHTML = html;
+            }
+            
+            function generarTablaHTML(matriz) {
+                if (!matriz || matriz.length === 0) return '';
+                
+                let html = '<table>';
+                
+                // Encabezados
+                html += '<tr><th>Fila</th>';
+                html += '<th>Z</th>';
+                for (let j = 1; j < matriz[0].length - 1; j++) {
+                    html += `<th>x${j}</th>`;
+                }
+                html += '<th>RHS</th></tr>';
+                
+                // Filas
+                for (let i = 0; i < matriz.length; i++) {
+                    html += `<tr><td>${i === 0 ? 'Z' : 'F' + i}</td>`;
+                    for (let j = 0; j < matriz[i].length; j++) {
+                        const valor = Math.abs(matriz[i][j]) < 1e-10 ? 0 : matriz[i][j];
+                        html += `<td>${valor.toFixed(4)}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                
+                html += '</table>';
+                return html;
+            }
+            
+            // Implementación optimizada del método simplex
+            function procesarProblema(cadena) {
+                const startTime = performance.now();
+                
+                try {
+                    // Dividir la cadena por el separador ';'
+                    const partes = cadena.split(';').map(p => p.trim()).filter(p => p);
+                    
+                    if (partes.length < 2) {
+                        return { error: "Debe ingresar al menos una función objetivo y una restricción" };
+                    }
+                    
+                    // Función objetivo (invertir signos para maximización)
+                    const funcionObjetivo = partes[0];
+                    const [coefObjetivo, variablesOrden] = extraerCoeficientesConOrden(funcionObjetivo, null, true);
+                    
+                    // Procesar restricciones
+                    const restricciones = [];
+                    const resultados = [];
+                    const tiposRestriccion = [];  // 1 para <=, -1 para >=, 0 para =
+                    
+                    for (let i = 1; i < partes.length; i++) {
+                        const restriccion = partes[i];
+                        
+                        if (restriccion.includes('<=')) {
+                            const partesRestr = restriccion.split('<=');
+                            const [coef] = extraerCoeficientesConOrden(partesRestr[0].trim(), variablesOrden, false);
+                            const resultado = parseFloat(partesRestr[1].trim());
+                            restricciones.push(coef);
+                            resultados.push(resultado);
+                            tiposRestriccion.push(1);  // <=
+                        } else if (restriccion.includes('>=')) {
+                            const partesRestr = restriccion.split('>=');
+                            const [coef] = extraerCoeficientesConOrden(partesRestr[0].trim(), variablesOrden, false);
+                            const resultado = parseFloat(partesRestr[1].trim());
+                            restricciones.push(coef);
+                            resultados.push(resultado);
+                            tiposRestriccion.push(-1);  // >=
+                        } else if (restriccion.includes('=')) {
+                            const partesRestr = restriccion.split('=');
+                            const [coef] = extraerCoeficientesConOrden(partesRestr[0].trim(), variablesOrden, false);
+                            const resultado = parseFloat(partesRestr[1].trim());
+                            restricciones.push(coef);
+                            resultados.push(resultado);
+                            tiposRestriccion.push(0);  // =
+                        } else {
+                            return { error: `Restricción sin operador de comparación: ${restriccion}` };
+                        }
+                    }
+                    
+                    // Construir la matriz inicial
+                    const matrizInicial = construirMatriz(coefObjetivo, restricciones, resultados, tiposRestriccion);
+                    
+                    // Aplicar método simplex optimizado
+                    const { matrizOptima, iteraciones } = metodoSimplexOptimizado(matrizInicial);
+                    
+                    // Obtener solución
+                    const solucion = mostrarSolucion(matrizOptima);
+                    
+                    const endTime = performance.now();
+                    const tiempo = Math.round(endTime - startTime);
+                    
+                    return {
+                        coefObjetivo,
+                        restricciones,
+                        resultados,
+                        tiposRestriccion,
+                        matrizInicial,
+                        iteraciones,
+                        solucion,
+                        tiempo
+                    };
+                    
+                } catch (e) {
+                    return { error: "Error al procesar el problema: " + e.message };
+                }
+            }
+            
+            function extraerCoeficientesConOrden(expresion, ordenVariables, invertir) {
+                // Si no se proporciona orden, determinar las variables de la expresión
+                if (!ordenVariables) {
+                    // Usar un Set para mejor rendimiento con muchas variables
+                    const variablesSet = new Set();
+                    const patronVar = /[a-zA-Z]\d*/g;
+                    let match;
+                    
+                    while ((match = patronVar.exec(expresion)) !== null) {
+                        variablesSet.add(match[0]);
+                    }
+                    
+                    ordenVariables = Array.from(variablesSet).sort((a, b) => {
+                        const numA = parseInt(a.substring(1)) || 0;
+                        const numB = parseInt(b.substring(1)) || 0;
+                        return numA - numB;
+                    });
+                }
+                
+                // Inicializar coeficientes con ceros
+                const coeficientes = new Array(ordenVariables.length).fill(0);
+                
+                // Patrón optimizado para encontrar términos
+                const terminos = expresion.match(/([+-]?)\s*(\d*\.?\d*)\s*([a-zA-Z]\d*)?/g) || [];
+                
+                for (const termino of terminos) {
+                    if (!termino.trim()) continue;
+                    
+                    // Extraer componentes del término
+                    const match = termino.match(/([+-]?)\s*(\d*\.?\d*)\s*([a-zA-Z]\d*)?/);
+                    if (!match) continue;
+                    
+                    const [_, signo, coefStr, varName] = match;
+                    
+                    // Determinar el signo
+                    const factorSigno = signo === '-' ? -1 : 1;
+                    
+                    // Determinar el coeficiente numérico
+                    let valor = 1.0;
+                    if (coefStr && coefStr !== '.') {
+                        valor = parseFloat(coefStr) || 1.0;
+                    }
+                    
+                    let coeficiente = factorSigno * valor;
+                    
+                    // Invertir signo si es necesario
+                    if (invertir) {
+                        coeficiente = -coeficiente;
+                    }
+                    
+                    // Asignar a la posición correcta
+                    if (varName) {
+                        const idx = ordenVariables.indexOf(varName);
+                        if (idx !== -1) {
+                            coeficientes[idx] += coeficiente;
+                        }
+                    }
+                }
+                
+                return [coeficientes, ordenVariables];
+            }
+            
+            function construirMatriz(coefObjetivo, restricciones, resultados, tiposRestriccion) {
+                const numRestricciones = restricciones.length;
+                const numVariables = coefObjetivo.length;
+                
+                // Calcular dimensiones de la matriz
+                const columnas = 1 + numVariables + numRestricciones + 1;
+                const filas = numRestricciones + 1;
+                
+                // Inicializar matriz con ceros de forma más eficiente
+                const matriz = Array(filas);
+                for (let i = 0; i < filas; i++) {
+                    matriz[i] = Array(columnas).fill(0);
+                }
+                
+                // Fila 0: función objetivo
+                matriz[0][0] = 1.0;  // Variable Z
+                for (let j = 0; j < numVariables; j++) {
+                    matriz[0][j + 1] = coefObjetivo[j];
+                }
+                
+                // Filas de restricciones (1 en adelante)
+                for (let i = 0; i < numRestricciones; i++) {
+                    const filaIdx = i + 1;
+                    
+                    // Colocar coeficientes de la restricción
+                    for (let j = 0; j < numVariables; j++) {
+                        matriz[filaIdx][j + 1] = restricciones[i][j];
+                    }
+                    
+                    // Colocar variable de holgura/excedente según el tipo de restricción
+                    const holguraPos = 1 + numVariables + i;
+                    
+                    if (tiposRestriccion[i] === 1) {  // <= (holgura positiva)
+                        matriz[filaIdx][holguraPos] = 1.0;
+                    } else if (tiposRestriccion[i] === -1) {  // >= (excedente negativo)
+                        matriz[filaIdx][holguraPos] = -1.0;
+                    }
+                    // Para = no se agrega variable de holgura
+                    
+                    // Colocar resultado en la última columna
+                    matriz[filaIdx][columnas - 1] = resultados[i];
+                }
+                
+                return matriz;
+            }
+            
+            function metodoSimplexOptimizado(matriz) {
+                const iteraciones = [];
+                let iteracion = 0;
+                const maxIteraciones = 50;
+                let matrizActual = matriz.map(row => row.slice()); // Copia más eficiente
+                
+                while (iteracion < maxIteraciones) {
+                    const filaObjetivo = matrizActual[0];
+                    
+                    // Encontrar columna pivote (valor más negativo)
+                    let minValor = 0;
+                    let columnaPivote = -1;
+                    
+                    for (let j = 1; j < filaObjetivo.length - 1; j++) {
+                        if (filaObjetivo[j] < minValor) {
+                            minValor = filaObjetivo[j];
+                            columnaPivote = j;
+                        }
+                    }
+                    
+                    // Si no hay valores negativos, solución óptima encontrada
+                    if (columnaPivote === -1) break;
+                    
+                    // Encontrar fila pivote usando la regla del cociente mínimo
+                    let cocienteMinimo = Infinity;
+                    let filaPivote = -1;
+                    
+                    for (let i = 1; i < matrizActual.length; i++) {
+                        const divisor = matrizActual[i][columnaPivote];
+                        if (divisor <= 1e-10) continue;
+                        
+                        const cociente = matrizActual[i][matrizActual[i].length - 1] / divisor;
+                        if (cociente >= 0 && cociente < cocienteMinimo) {
+                            cocienteMinimo = cociente;
+                            filaPivote = i;
+                        }
+                    }
+                    
+                    if (filaPivote === -1) break;
+                    
+                    // Aplicar eliminación de Gauss-Jordan optimizada
+                    aplicarGaussJordanOptimizado(matrizActual, filaPivote, columnaPivote);
+                    
+                    // Guardar iteración (solo si es necesario para mostrar)
+                    iteraciones.push(matrizActual.map(row => row.slice()));
+                    
+                    iteracion++;
+                }
+                
+                return { matrizOptima: matrizActual, iteraciones };
+            }
+            
+            function aplicarGaussJordanOptimizado(matriz, filaPivote, columnaPivote) {
+                const numFilas = matriz.length;
+                const numColumnas = matriz[0].length;
+                const elementoPivote = matriz[filaPivote][columnaPivote];
+                
+                // Normalizar la fila pivote
+                for (let j = 0; j < numColumnas; j++) {
+                    matriz[filaPivote][j] /= elementoPivote;
+                }
+                
+                // Hacer ceros en las demás filas de la columna pivote
+                for (let i = 0; i < numFilas; i++) {
+                    if (i === filaPivote) continue;
+                    
+                    const factor = matriz[i][columnaPivote];
+                    for (let j = 0; j < numColumnas; j++) {
+                        matriz[i][j] -= factor * matriz[filaPivote][j];
+                    }
+                }
+            }
+            
+            function mostrarSolucion(matriz) {
+                const numFilas = matriz.length;
+                const numColumnas = matriz[0].length;
+                
+                // Valor óptimo de Z
+                const zOptimo = matriz[0][numColumnas - 1];
+                
+                // Encontrar variables básicas
+                const variables = {};
+                
+                for (let j = 1; j < numColumnas - 1; j++) {
+                    let countUnos = 0;
+                    let filaBasica = -1;
+                    let valorBasico = 0;
+                    
+                    for (let i = 0; i < numFilas; i++) {
+                        if (Math.abs(matriz[i][j] - 1.0) < 1e-6) {
+                            countUnos++;
+                            filaBasica = i;
+                            valorBasico = matriz[i][numColumnas - 1];
+                        } else if (Math.abs(matriz[i][j]) > 1e-6) {
+                            countUnos++;
+                        }
+                    }
+                    
+                    if (countUnos === 1 && filaBasica !== -1) {
+                        variables[`x${j}`] = valorBasico;
+                    }
+                }
+                
+                return { z: zOptimo, variables };
+            }
+        });
+    </script>
+</body>
+</html>
